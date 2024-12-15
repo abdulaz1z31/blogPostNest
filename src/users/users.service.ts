@@ -100,4 +100,7 @@ export class UsersService {
       statusCode: 200,
     };
   }
+  async findOne(email: string): Promise<User> {
+    return await this.usersModel.findOne({ email });
+  }
 }
