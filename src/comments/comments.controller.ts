@@ -10,41 +10,32 @@ import {
 import { CommentsService } from './comments.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-// type message = {
-//   message: string;
-//   statusCode: number;
-// };
-@Controller('comments')
+@Controller('comment')
 export class CommentsController {
-  constructor(
-    private readonly commentsService: CommentsService,
-    @InjectModel('comments') private usersModel: Model<Comment>,
-  ) {}
+  constructor(private readonly commentService: CommentsService) {}
 
   @Post()
-  create(@Body() createCommentDto: CreateCommentDto) {
-    return this.commentsService.create(createCommentDto);
+  create(@Body() createPostDto: CreateCommentDto) {
+    return this.commentService.create(createPostDto);
   }
 
-  @Get()
+  @Get('comment')
   findAll() {
-    return this.commentsService.findAll();
+    return this.commentService.findAll();
   }
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.commentsService.findOne(+id);
+    return this.commentService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateCommentDto: UpdateCommentDto) {
-    return this.commentsService.update(+id, updateCommentDto);
+  update(@Param('id') id: string, @Body() updatePostDto: UpdateCommentDto) {
+    return this.commentService.update(id, updatePostDto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.commentsService.remove(+id);
+    return this.commentService.remove(id);
   }
 }
