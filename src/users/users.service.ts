@@ -5,6 +5,7 @@ import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { loginUserDto } from './entities/login.entity';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { Hashing } from 'src/hashing/hash';
 type message = {
   message: string;
   statusCode: number;
@@ -13,7 +14,9 @@ type message = {
 export class UsersService {
   constructor(@InjectModel('users') private usersModel: Model<User>) {}
 
-  async registerUser(userData: CreateUserDto): Promise<User | message> {
+  async registerUser(
+    userData: CreateUserDto,
+  ): Promise<Omit<User, 'password'> | message> {
     const email = userData.email;
     const user = await this.usersModel.findOne({ email });
     if (user) {
@@ -22,11 +25,15 @@ export class UsersService {
         statusCode: 409,
       };
     }
+    const hashPassword = await Hashing.generate(userData.password);
+    userData.password = hashPassword;
     const newUser = new this.usersModel(userData);
     await newUser.save();
-    delete newUser.password;
-    return newUser;
+    const userObject = newUser.toObject();
+    delete userObject.password;
+    return userObject;
   }
+
   async loginUser(userData: loginUserDto): Promise<message> {
     const email = userData.email;
     const user = await this.usersModel.findOne({ email });
@@ -36,7 +43,11 @@ export class UsersService {
         statusCode: 403,
       };
     }
-    if (userData.password != user.password) {
+    const isPasswordMatch = await Hashing.compare(
+      userData.password,
+      user.password,
+    );
+    if (!isPasswordMatch) {
       return {
         message: 'Email or password is wrong',
         statusCode: 403,
@@ -51,7 +62,7 @@ export class UsersService {
     const users = await this.usersModel.find();
     return users;
   }
-  async getById(id: string): Promise<User | message> {
+  async getById(id: string): Promise<Omit<User, 'password'> | message> {
     const user = await this.usersModel.findById(id);
     if (!user) {
       return {
@@ -59,12 +70,16 @@ export class UsersService {
         statusCode: 403,
       };
     }
-    return user;
+    const objUser = user.toObject();
+    delete objUser.password;
+    return objUser;
   }
   async updateUser(
     id: string,
     newData: UpdateUserDto,
-  ): Promise<User | message> {
+  ): Promise<Omit<User, 'password'> | message> {
+    const hashPassword = await Hashing.generate(newData.password);
+    newData.password = hashPassword;
     const user = await this.usersModel.findByIdAndUpdate(id, newData, {
       new: true,
     });
@@ -74,8 +89,9 @@ export class UsersService {
         statusCode: 403,
       };
     }
-    delete user.password;
-    return user;
+    const objUser = user.toObject();
+    delete objUser.password;
+    return objUser;
   }
   async deleteUser(id: string): Promise<message> {
     await this.usersModel.findByIdAndDelete(id);
